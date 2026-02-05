@@ -1,6 +1,15 @@
 spring:
   application:
     name: smartthings-kotlin
+  datasource:
+    url: jdbc:h2:file:./data/smartthings;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
 
 smartthings:
   api:
@@ -9,6 +18,20 @@ smartthings:
 
 server:
   port: 8080
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      smartthings:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+  retry:
+    instances:
+      smartthings:
+        maxAttempts: 3
+        waitDuration: 500ms
 
 logging:
   level:

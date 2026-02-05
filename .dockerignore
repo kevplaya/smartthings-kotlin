@@ -1,0 +1,9 @@
+.git
+.gitignore
+.gradle
+build
+!gradle/wrapper/gradle-wrapper.jar
+*.md
+.idea
+*.iml
+.DS_Store

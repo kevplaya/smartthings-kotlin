@@ -12,7 +12,7 @@ class DeviceController(
     private val deviceService: DeviceService
 ) {
     @GetMapping("/devices")
-    fun getDevices(): List<DeviceDto> {
+    suspend fun getDevices(): List<DeviceDto> {
         return deviceService.getDevices()
     }
 }

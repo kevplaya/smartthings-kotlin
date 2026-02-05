@@ -1,28 +1,37 @@
 package com.example.smartthings.service
 
-import com.example.smartthings.client.SmartThingsClient
+import com.example.smartthings.port.DeviceSource
 import com.example.smartthings.web.dto.DeviceResponse
 import com.example.smartthings.web.dto.DevicesResponse
-import io.mockk.every
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
+import io.mockk.coEvery
 import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.coVerify
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpHeaders
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.TimeoutException
 
 class DeviceServiceTest {
 
-    private lateinit var client: SmartThingsClient
+    private lateinit var deviceSource: DeviceSource
     private lateinit var service: DeviceService
 
     @BeforeEach
     fun setup() {
-        client = mockk()
-        service = DeviceService(client)
+        deviceSource = mockk()
+        val registry = CircuitBreakerRegistry.of(CircuitBreakerConfig.ofDefaults())
+        service = DeviceService(deviceSource, registry)
     }
 
     @Test
-    fun `getDevices should return device list from client`() {
+    fun `getDevices should return device list from client`() = runBlocking {
         // given
         val mockDevices = listOf(
             DeviceResponse(
@@ -46,7 +55,7 @@ class DeviceServiceTest {
                 locationId = "location-1"
             )
         )
-        every { client.getDevices() } returns DevicesResponse(mockDevices)
+        coEvery { deviceSource.getDevices() } returns DevicesResponse(mockDevices)
 
         // when
         val result = service.getDevices()
@@ -57,19 +66,69 @@ class DeviceServiceTest {
         assertThat(result[0].name).isEqualTo("Living Room Light")
         assertThat(result[1].deviceId).isEqualTo("device-2")
         assertThat(result[1].name).isEqualTo("Kitchen Switch")
-        verify(exactly = 1) { client.getDevices() }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 
     @Test
-    fun `getDevices should return empty list when client returns empty`() {
+    fun `getDevices should return empty list when client returns empty`() = runBlocking {
         // given
-        every { client.getDevices() } returns DevicesResponse(emptyList())
+        coEvery { deviceSource.getDevices() } returns DevicesResponse(emptyList())
 
         // when
         val result = service.getDevices()
 
         // then
         assertThat(result).isEmpty()
-        verify(exactly = 1) { client.getDevices() }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
+    }
+
+    @Test
+    fun `getDevices should propagate WebClientResponseException when upstream returns 4xx`() = runBlocking {
+        // given
+        val ex = WebClientResponseException.create(
+            404,
+            "Not Found",
+            HttpHeaders.EMPTY,
+            byteArrayOf(),
+            StandardCharsets.UTF_8
+        )
+        coEvery { deviceSource.getDevices() } throws ex
+
+        // when / then
+        assertThatThrownBy { runBlocking { service.getDevices() } }
+            .isInstanceOf(WebClientResponseException::class.java)
+            .hasMessageContaining("404")
+        coVerify(exactly = 1) { deviceSource.getDevices() }
+    }
+
+    @Test
+    fun `getDevices should propagate WebClientResponseException when upstream returns 5xx`() = runBlocking {
+        // given
+        val ex = WebClientResponseException.create(
+            503,
+            "Service Unavailable",
+            HttpHeaders.EMPTY,
+            byteArrayOf(),
+            StandardCharsets.UTF_8
+        )
+        coEvery { deviceSource.getDevices() } throws ex
+
+        // when / then
+        assertThatThrownBy { runBlocking { service.getDevices() } }
+            .isInstanceOf(WebClientResponseException::class.java)
+            .hasMessageContaining("503")
+        coVerify(exactly = 1) { deviceSource.getDevices() }
+    }
+
+    @Test
+    fun `getDevices should propagate TimeoutException when upstream times out`() = runBlocking {
+        // given
+        coEvery { deviceSource.getDevices() } throws TimeoutException("Read timed out")
+
+        // when / then
+        assertThatThrownBy { runBlocking { service.getDevices() } }
+            .isInstanceOf(TimeoutException::class.java)
+            .hasMessageContaining("Read timed out")
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 }
