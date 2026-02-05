@@ -15,7 +15,7 @@ class SmartThingsClientTest {
         webClient = WebClient.builder()
             .baseUrl("http://localhost:8080")
             .build()
-        client = SmartThingsClient(webClient)
+        client = SmartThingsClient(webClient, "test-token")
     }
 
     @Test

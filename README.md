@@ -46,35 +46,32 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 │   ├── main/
 │   │   ├── kotlin/com/example/smartthings/
 │   │   │   ├── SmartThingsApplication.kt
-│   │   │   ├── config/               # 설정 (CORS, OAuth, SmartThings)
+│   │   │   ├── config/               # 설정 (CORS, Basic Auth, SmartThings)
+│   │   │   │   ├── BasicAuthWebFilter.kt
 │   │   │   │   ├── CorsConfig.kt
-│   │   │   │   ├── SessionAuthWebFilter.kt
 │   │   │   │   └── SmartThingsConfig.kt
 │   │   │   ├── port/
 │   │   │   │   └── DeviceSource.kt   # 포트 인터페이스
 │   │   │   ├── client/
-│   │   │   │   └── SmartThingsClient.kt  # DeviceSource 구현
+│   │   │   │   └── SmartThingsClient.kt  # DeviceSource 구현 (PAT 사용)
 │   │   │   ├── domain/
-│   │   │   │   ├── UserDeviceAlias.kt
-│   │   │   │   └── UserSession.kt    # OAuth 세션
+│   │   │   │   └── UserDeviceAlias.kt
 │   │   │   ├── repository/
-│   │   │   │   ├── UserDeviceAliasRepository.kt
-│   │   │   │   └── UserSessionRepository.kt
+│   │   │   │   └── UserDeviceAliasRepository.kt
 │   │   │   ├── service/
 │   │   │   │   ├── DeviceService.kt
-│   │   │   │   ├── DeviceAliasService.kt
-│   │   │   │   └── OAuthService.kt   # OAuth 인증
+│   │   │   │   └── DeviceAliasService.kt
 │   │   │   └── web/
 │   │   │       ├── dto/
 │   │   │       │   ├── DeviceDto.kt
 │   │   │       │   ├── DeviceAliasDto.kt
 │   │   │       │   ├── ErrorResponse.kt
-│   │   │       │   └── OAuthTokenResponse.kt
+│   │   │       │   ├── SmartAppRequest.kt
+│   │   │       │   └── SmartAppResponse.kt
 │   │   │       ├── GlobalExceptionHandler.kt
 │   │   │       ├── DeviceController.kt
 │   │   │       ├── DeviceAliasController.kt
-│   │   │       ├── OAuthController.kt
-│   │   │       └── UserController.kt
+│   │   │       └── SmartAppController.kt   # POST / (webhook CONFIRMATION)
 │   │   └── resources/
 │   │       └── application.yml
 │   └── test/
@@ -85,13 +82,9 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 └── frontend/                         # 프론트엔드 (React/Vite)
     ├── src/
     │   ├── api/                      # API 클라이언트
-    │   │   ├── auth.ts               # OAuth 로그인/로그아웃
-    │   │   ├── devices.ts            # 기기 목록 조회
-    │   │   └── user.ts               # 사용자 정보
+    │   │   └── devices.ts            # 기기 목록 조회 (Basic Auth 팝업)
     │   ├── pages/                    # 페이지 컴포넌트
-    │   │   ├── DevicesPage.tsx       # 기기 목록 페이지
-    │   │   ├── LoginPage.tsx         # 로그인 페이지
-    │   │   └── OAuthCallbackPage.tsx # OAuth 콜백
+    │   │   └── DevicesPage.tsx       # 기기 목록 페이지
     │   ├── types/
     │   │   └── device.ts             # TypeScript 타입 정의
     │   ├── App.tsx                   # 루트 컴포넌트, 라우팅
@@ -156,37 +149,36 @@ npm run dev
 - 개발 서버: http://localhost:5173
 - 백엔드 API: `VITE_API_URL` (기본 개발 시 http://localhost:8080)
 
-### 6. OAuth 인증 (SmartThings 로그인)
+### 6. Basic Auth (API 접근 제한)
 
-앱은 SmartThings OAuth로 “나만 사용”하도록 제한할 수 있습니다. 사용자가 SmartThings 계정으로 로그인해야 기기 목록 등 API를 사용할 수 있습니다.
+API 접근은 Basic Auth로 제한됩니다. 브라우저에서 Vercel 앱 접속 후 `/api/devices` 호출 시 401이 반환되면 브라우저가 ID/PW 입력 팝업을 띄웁니다.
 
-**SmartThings CLI로 OAuth 앱 등록**
+**환경 변수**
 
-1. [SmartThings CLI](https://github.com/SmartThingsCommunity/smartthings-cli) 설치 후 `smartthings apps:create` 실행
-2. **Display name**: 앱 표시 이름 (예: SmartThings Kotlin App)
-3. **Target URL**: 백엔드 배포 URL (예: `https://xxx.railway.app`)
-4. **Redirect URIs**: `https://xxx.railway.app/api/oauth/callback`, 로컬 테스트 시 `http://localhost:8080/api/oauth/callback`
-5. **Permissions**: `r:devices:*`, `x:devices:*`
-6. 등록 후 발급된 **Client ID**, **Client Secret**을 Railway 환경 변수에 설정 (Git에 올리지 않음)
+- `BASIC_AUTH_USERNAME`: 로그인 ID (기본값: `admin`)
+- `BASIC_AUTH_PASSWORD`: 로그인 비밀번호
 
-**로컬 OAuth 테스트**
+**로컬 테스트**
 
-- 백엔드: `SERVER_BASE_URL=http://localhost:8080`, `FRONTEND_URL=http://localhost:5173`, `SMARTTHINGS_OAUTH_CLIENT_ID`, `SMARTTHINGS_OAUTH_CLIENT_SECRET` 설정 후 실행
-- SmartThings 앱 등록 시 Redirect URI에 `http://localhost:8080/api/oauth/callback` 추가
+```bash
+export BASIC_AUTH_USERNAME=admin
+export BASIC_AUTH_PASSWORD=your-password
+./gradlew bootRun
+```
 
 ### 7. 배포 (Railway + Vercel)
 
 - **백엔드**: [Railway](https://railway.app)에 배포. 환경 변수에만 비밀/토큰 설정 (Git에 올리지 않음).
 - **프론트엔드**: [Vercel](https://vercel.com)에 배포.
 
-**Railway 환경 변수 (OAuth 사용 시)**
+**Railway 환경 변수 (PAT + Basic Auth)**
 
 | 변수 | 설명 |
 |------|------|
-| `SMARTTHINGS_OAUTH_CLIENT_ID` | SmartThings CLI에서 발급한 Client ID |
-| `SMARTTHINGS_OAUTH_CLIENT_SECRET` | SmartThings CLI에서 발급한 Client Secret |
-| `SERVER_BASE_URL` | 백엔드 공개 URL (예: `https://xxx.railway.app`) |
-| `FRONTEND_URL` | 프론트엔드 URL (예: `https://xxx.vercel.app`) |
+| `SMARTTHINGS_TOKEN` | SmartThings Personal Access Token |
+| `BASIC_AUTH_USERNAME` | Basic Auth 로그인 ID |
+| `BASIC_AUTH_PASSWORD` | Basic Auth 비밀번호 |
+| `SERVER_BASE_URL` | 백엔드 공개 URL (SmartApp webhook용, 예: `https://xxx.railway.app`) |
 
 **Vercel 배포 절차**
 
@@ -196,14 +188,13 @@ npm run dev
 4. **Environment Variables**에 `VITE_API_URL` 추가 (Railway 백엔드 URL, 예: `https://xxx.railway.app`) — **Git에 올리지 않고 Vercel 대시보드에서만 설정**
 5. **Deploy** 실행
 
-**배포 순서 권장**: Railway로 백엔드 먼저 배포 → SmartThings CLI로 Redirect URI에 Railway URL 등록 → Vercel로 프론트 배포 → Railway에 `FRONTEND_URL`에 Vercel URL 설정
 
 ### 8. 보안 (비밀/URL 관리)
 
 | 항목 | Git에 올리면 안 됨 | 설정 위치 |
 |------|---------------------|-----------|
 | 프로덕션 백엔드 URL | 예 | Vercel 환경 변수 `VITE_API_URL` |
-| SmartThings 토큰 / OAuth Client Secret | 예 | Railway(백엔드) 환경 변수 |
+| SmartThings PAT, Basic Auth 비밀번호 | 예 | Railway(백엔드) 환경 변수 |
 | DB URL, API 키 등 | 예 | Railway 환경 변수 |
 
 - 로컬용 예시만 `.env.example`, `application-local.yml` 예시 형태로 둘 수 있으며, 실제 값은 각자 로컬·배포 환경 변수에만 둡니다.
@@ -260,31 +251,6 @@ SmartThings에 등록된 기기 목록. **인증 필요** (OAuth 세션).
 ]
 ```
 
-### GET /api/users/{userId}/devices/{deviceId}/alias
-
-사용자·기기별로 저장한 별명을 조회합니다. 없으면 `404`.
-
-**Response:** `200 OK`
-
-```json
-{ "alias": "거실 조명" }
-```
-
-### PUT /api/users/{userId}/devices/{deviceId}/alias
-
-사용자·기기별 별명을 저장하거나 수정합니다.
-
-**Request body:**
-
-```json
-{ "alias": "거실 조명" }
-```
-
-**Response:** `200 OK`
-
-```json
-{ "alias": "거실 조명" }
-```
 
 ### 에러 응답 (공통)
 
@@ -294,22 +260,6 @@ SmartThings에 등록된 기기 목록. **인증 필요** (OAuth 세션).
 - 타임아웃: `504 Gateway Timeout`
 - Circuit Breaker 열림: `503` (SmartThings API temporarily unavailable)
 - 기타: `500 Internal Server Error`
-
-## 개발 가이드
-
-### 테스트 작성
-
-TDD(Test-Driven Development) 방식을 따릅니다:
-
-1. Red: 실패하는 테스트 작성
-2. Green: 테스트를 통과하는 최소한의 코드 작성
-3. Refactor: 코드 개선
-
-### 커밋 규칙
-
-- Subject: 72자 이하, 명령형
-- 테스트는 해당 코드와 함께 커밋
-- 리팩토링은 별도 커밋
 
 ## 참고 문서
 

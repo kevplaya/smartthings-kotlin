@@ -17,18 +17,14 @@ smartthings:
     token: ${SMARTTHINGS_TOKEN:}
   webhook:
     target-url: ${SERVER_BASE_URL:http://localhost:8080}
-  oauth:
-    client-id: ${SMARTTHINGS_OAUTH_CLIENT_ID:}
-    client-secret: ${SMARTTHINGS_OAUTH_CLIENT_SECRET:}
-    authorization-uri: https://api.smartthings.com/oauth/authorize
-    token-uri: https://api.smartthings.com/oauth/token
-    redirect-uri: ${SERVER_BASE_URL:http://localhost:8080}/api/oauth/callback
-    scopes: r:devices:*,x:devices:*
+
+basic:
+  auth:
+    username: ${BASIC_AUTH_USERNAME:admin}
+    password: ${BASIC_AUTH_PASSWORD:}
 
 server:
   port: 8080
-  base-url: ${SERVER_BASE_URL:http://localhost:8080}
-  frontend-url: ${FRONTEND_URL:http://localhost:5173}
 
 resilience4j:
   circuitbreaker:

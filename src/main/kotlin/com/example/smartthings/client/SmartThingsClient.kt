@@ -11,16 +11,17 @@ import org.springframework.web.reactive.function.client.bodyToMono
 
 @Component
 class SmartThingsClient(
-    private val smartThingsWebClient: WebClient
+    private val smartThingsWebClient: WebClient,
+    @org.springframework.beans.factory.annotation.Value("\${smartthings.api.token}") private val token: String
 ) : DeviceSource {
     private val logger = LoggerFactory.getLogger(SmartThingsClient::class.java)
 
-    override suspend fun getDevices(accessToken: String): DevicesResponse {
+    override suspend fun getDevices(): DevicesResponse {
         logger.info("Fetching devices from SmartThings API")
         return smartThingsWebClient
             .get()
             .uri("/devices")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
             .retrieve()
             .bodyToMono<DevicesResponse>()
             .doOnSuccess { it?.let { resp -> logger.info("Successfully fetched ${resp.items.size} devices") } }

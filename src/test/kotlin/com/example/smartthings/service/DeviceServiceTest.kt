@@ -55,10 +55,10 @@ class DeviceServiceTest {
                 locationId = "location-1"
             )
         )
-        coEvery { deviceSource.getDevices("test-token") } returns DevicesResponse(mockDevices)
+        coEvery { deviceSource.getDevices() } returns DevicesResponse(mockDevices)
 
         // when
-        val result = service.getDevices("test-token")
+        val result = service.getDevices()
 
         // then
         assertThat(result).hasSize(2)
@@ -66,20 +66,20 @@ class DeviceServiceTest {
         assertThat(result[0].name).isEqualTo("Living Room Light")
         assertThat(result[1].deviceId).isEqualTo("device-2")
         assertThat(result[1].name).isEqualTo("Kitchen Switch")
-        coVerify(exactly = 1) { deviceSource.getDevices("test-token") }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 
     @Test
     fun `getDevices should return empty list when client returns empty`() = runBlocking {
         // given
-        coEvery { deviceSource.getDevices("test-token") } returns DevicesResponse(emptyList())
+        coEvery { deviceSource.getDevices() } returns DevicesResponse(emptyList())
 
         // when
-        val result = service.getDevices("test-token")
+        val result = service.getDevices()
 
         // then
         assertThat(result).isEmpty()
-        coVerify(exactly = 1) { deviceSource.getDevices("test-token") }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 
     @Test
@@ -92,13 +92,13 @@ class DeviceServiceTest {
             byteArrayOf(),
             StandardCharsets.UTF_8
         )
-        coEvery { deviceSource.getDevices("test-token") } throws ex
+        coEvery { deviceSource.getDevices() } throws ex
 
         // when / then
-        assertThatThrownBy { runBlocking { service.getDevices("test-token") } }
+        assertThatThrownBy { runBlocking { service.getDevices() } }
             .isInstanceOf(WebClientResponseException::class.java)
             .hasMessageContaining("404")
-        coVerify(exactly = 1) { deviceSource.getDevices("test-token") }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 
     @Test
@@ -111,24 +111,24 @@ class DeviceServiceTest {
             byteArrayOf(),
             StandardCharsets.UTF_8
         )
-        coEvery { deviceSource.getDevices("test-token") } throws ex
+        coEvery { deviceSource.getDevices() } throws ex
 
         // when / then
-        assertThatThrownBy { runBlocking { service.getDevices("test-token") } }
+        assertThatThrownBy { runBlocking { service.getDevices() } }
             .isInstanceOf(WebClientResponseException::class.java)
             .hasMessageContaining("503")
-        coVerify(exactly = 1) { deviceSource.getDevices("test-token") }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 
     @Test
     fun `getDevices should propagate TimeoutException when upstream times out`() = runBlocking {
         // given
-        coEvery { deviceSource.getDevices("test-token") } throws TimeoutException("Read timed out")
+        coEvery { deviceSource.getDevices() } throws TimeoutException("Read timed out")
 
         // when / then
-        assertThatThrownBy { runBlocking { service.getDevices("test-token") } }
+        assertThatThrownBy { runBlocking { service.getDevices() } }
             .isInstanceOf(TimeoutException::class.java)
             .hasMessageContaining("Read timed out")
-        coVerify(exactly = 1) { deviceSource.getDevices("test-token") }
+        coVerify(exactly = 1) { deviceSource.getDevices() }
     }
 }

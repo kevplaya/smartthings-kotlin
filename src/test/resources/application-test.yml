@@ -12,17 +12,14 @@ spring:
 smartthings:
   api:
     base-url: http://localhost:8080
-  oauth:
-    client-id: test-client
-    client-secret: test-secret
-    authorization-uri: https://api.smartthings.com/oauth/authorize
-    token-uri: https://api.smartthings.com/oauth/token
-    redirect-uri: http://localhost:8080/api/oauth/callback
-    scopes: r:devices:*,x:devices:*
+    token: test-token
+  webhook:
+    target-url: http://localhost:8080
 
-server:
-  base-url: http://localhost:8080
-  frontend-url: http://localhost:5173
+basic:
+  auth:
+    username: test-user
+    password: test-pass
 
 logging:
   level:
