@@ -114,7 +114,44 @@ docker compose up --build
 - H2 DB 데이터는 `app-data` 볼륨에 저장됩니다.
 - 앱만 빌드: `docker build -t smartthings-kotlin .`
 
-### 5. 테스트
+### 5. 프론트엔드 (React + MUI)
+
+```bash
+cd frontend
+cp .env.example .env.local   # 필요 시 API URL 수정
+npm install
+npm run dev
+```
+
+- 개발 서버: http://localhost:5173
+- 백엔드 API: `VITE_API_URL` (기본 개발 시 http://localhost:8080)
+
+### 6. 배포 (Railway + Vercel)
+
+- **백엔드**: [Railway](https://railway.app) 등에 배포. 환경 변수에만 비밀/토큰 설정 (Git에 올리지 않음).
+- **프론트엔드**: [Vercel](https://vercel.com)에 배포.
+
+**Vercel 배포 절차**
+
+1. 이 저장소를 GitHub에 푸시한 뒤 Vercel 로그인
+2. **Add New Project** → **Import Git Repository**에서 해당 저장소 선택
+3. **Root Directory**를 `frontend`로 설정
+4. **Environment Variables**에 `VITE_API_URL` 추가 (Railway 등에 배포한 백엔드 URL, 예: `https://xxx.railway.app`) — **프로덕션 URL은 Git에 올리지 않고 Vercel 대시보드에서만 설정**
+5. **Deploy** 실행
+
+**Railway 배포 시** 환경 변수 예: `SMARTTHINGS_TOKEN`(PAT 사용 시), 또는 OAuth 사용 시 `SMARTTHINGS_OAUTH_CLIENT_ID`, `SMARTTHINGS_OAUTH_CLIENT_SECRET`, `SMARTTHINGS_OAUTH_REDIRECT_URI` 등. 토큰·비밀은 **절대 Git에 커밋하지 않고** Railway 대시보드에서만 설정.
+
+### 7. 보안 (비밀/URL 관리)
+
+| 항목 | Git에 올리면 안 됨 | 설정 위치 |
+|------|---------------------|-----------|
+| 프로덕션 백엔드 URL | 예 | Vercel 환경 변수 `VITE_API_URL` |
+| SmartThings 토큰 / OAuth Client Secret | 예 | Railway(백엔드) 환경 변수 |
+| DB URL, API 키 등 | 예 | Railway 환경 변수 |
+
+- 로컬용 예시만 `.env.example`, `application-local.yml` 예시 형태로 둘 수 있으며, 실제 값은 각자 로컬·배포 환경 변수에만 둡니다.
+
+### 8. 테스트
 
 ```bash
 ./gradlew test
