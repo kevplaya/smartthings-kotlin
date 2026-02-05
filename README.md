@@ -46,35 +46,34 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 │   ├── main/
 │   │   ├── kotlin/com/example/smartthings/
 │   │   │   ├── SmartThingsApplication.kt
-│   │   │   ├── config/               # 설정 (CORS, OAuth, SmartThings)
+│   │   │   ├── config/               # 설정 (CORS, SmartThings)
 │   │   │   │   ├── CorsConfig.kt
-│   │   │   │   ├── SessionAuthWebFilter.kt
 │   │   │   │   └── SmartThingsConfig.kt
 │   │   │   ├── port/
 │   │   │   │   └── DeviceSource.kt   # 포트 인터페이스
 │   │   │   ├── client/
 │   │   │   │   └── SmartThingsClient.kt  # DeviceSource 구현
 │   │   │   ├── domain/
-│   │   │   │   ├── UserDeviceAlias.kt
-│   │   │   │   └── UserSession.kt    # OAuth 세션
+│   │   │   │   ├── InstalledApp.kt   # Webhook 설치 정보 (authToken 등)
+│   │   │   │   └── UserDeviceAlias.kt
 │   │   │   ├── repository/
-│   │   │   │   ├── UserDeviceAliasRepository.kt
-│   │   │   │   └── UserSessionRepository.kt
+│   │   │   │   ├── InstalledAppRepository.kt
+│   │   │   │   └── UserDeviceAliasRepository.kt
 │   │   │   ├── service/
-│   │   │   │   ├── DeviceService.kt
 │   │   │   │   ├── DeviceAliasService.kt
-│   │   │   │   └── OAuthService.kt   # OAuth 인증
+│   │   │   │   ├── DeviceService.kt
+│   │   │   │   └── SmartThingsTokenProvider.kt  # InstalledApp 또는 PAT
 │   │   │   └── web/
 │   │   │       ├── dto/
-│   │   │       │   ├── DeviceDto.kt
 │   │   │       │   ├── DeviceAliasDto.kt
+│   │   │       │   ├── DeviceDto.kt
 │   │   │       │   ├── ErrorResponse.kt
-│   │   │       │   └── OAuthTokenResponse.kt
+│   │   │       │   ├── SmartAppRequest.kt
+│   │   │       │   └── SmartAppResponse.kt
 │   │   │       ├── GlobalExceptionHandler.kt
-│   │   │       ├── DeviceController.kt
 │   │   │       ├── DeviceAliasController.kt
-│   │   │       ├── OAuthController.kt
-│   │   │       └── UserController.kt
+│   │   │       ├── DeviceController.kt
+│   │   │       └── SmartAppController.kt   # POST /smartapp (lifecycle)
 │   │   └── resources/
 │   │       └── application.yml
 │   └── test/
@@ -85,13 +84,9 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 └── frontend/                         # 프론트엔드 (React/Vite)
     ├── src/
     │   ├── api/                      # API 클라이언트
-    │   │   ├── auth.ts               # OAuth 로그인/로그아웃
-    │   │   ├── devices.ts            # 기기 목록 조회
-    │   │   └── user.ts               # 사용자 정보
+    │   │   └── devices.ts            # 기기 목록 조회
     │   ├── pages/                    # 페이지 컴포넌트
-    │   │   ├── DevicesPage.tsx       # 기기 목록 페이지
-    │   │   ├── LoginPage.tsx         # 로그인 페이지
-    │   │   └── OAuthCallbackPage.tsx # OAuth 콜백
+    │   │   └── DevicesPage.tsx       # 기기 목록 페이지
     │   ├── types/
     │   │   └── device.ts             # TypeScript 타입 정의
     │   ├── App.tsx                   # 루트 컴포넌트, 라우팅
@@ -285,31 +280,6 @@ SmartThings에 등록된 기기 목록. **인증 필요** (OAuth 세션).
 ```json
 { "alias": "거실 조명" }
 ```
-
-### 에러 응답 (공통)
-
-`ErrorResponse`: `code`, `message`, `path`, `timestamp` (필요 시 `errors`).
-
-- 업스트림 API 오류: `502 Bad Gateway` / `503 Service Unavailable`
-- 타임아웃: `504 Gateway Timeout`
-- Circuit Breaker 열림: `503` (SmartThings API temporarily unavailable)
-- 기타: `500 Internal Server Error`
-
-## 개발 가이드
-
-### 테스트 작성
-
-TDD(Test-Driven Development) 방식을 따릅니다:
-
-1. Red: 실패하는 테스트 작성
-2. Green: 테스트를 통과하는 최소한의 코드 작성
-3. Refactor: 코드 개선
-
-### 커밋 규칙
-
-- Subject: 72자 이하, 명령형
-- 테스트는 해당 코드와 함께 커밋
-- 리팩토링은 별도 커밋
 
 ## 참고 문서
 
