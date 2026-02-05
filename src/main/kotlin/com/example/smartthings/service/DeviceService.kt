@@ -16,8 +16,8 @@ class DeviceService(
 ) {
     private val circuitBreaker: CircuitBreaker = circuitBreakerRegistry.circuitBreaker("smartthings")
 
-    suspend fun getDevices(): List<DeviceDto> = withContext(Dispatchers.IO) {
-        val response = circuitBreaker.executeSupplier { runBlocking { deviceSource.getDevices() } }
+    suspend fun getDevices(accessToken: String): List<DeviceDto> = withContext(Dispatchers.IO) {
+        val response = circuitBreaker.executeSupplier { runBlocking { deviceSource.getDevices(accessToken) } }
         response.items.map { DeviceDto.from(it) }
     }
 }
