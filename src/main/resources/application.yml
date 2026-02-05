@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: smartthings-kotlin
+
+smartthings:
+  api:
+    base-url: https://api.smartthings.com/v1
+    token: ${SMARTTHINGS_TOKEN:}
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.example.smartthings: INFO
+    org.springframework.web: INFO
