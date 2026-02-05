@@ -1,0 +1,8 @@
+smartthings:
+  api:
+    base-url: http://localhost:8080
+    token: test-token
+
+logging:
+  level:
+    com.example.smartthings: DEBUG
