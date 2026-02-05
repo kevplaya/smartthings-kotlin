@@ -32,22 +32,40 @@ class SmartAppController(
 
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun handleLifecycle(@RequestBody request: SmartAppRequest): SmartAppResponse = withContext(Dispatchers.IO) {
-        logger.info("SmartApp lifecycle: {}", request.lifecycle)
-        when (request.lifecycle) {
+        logger.info("=== SmartApp Request Received ===")
+        logger.info("Full request: {}", request)
+        logger.info("Lifecycle: {}", request.lifecycle)
+        logger.info("ConfirmationData: {}", request.confirmationData)
+        logger.info("ConfigurationData: {}", request.configurationData)
+        logger.info("InstallData: {}", request.installData)
+        
+        val lifecycle = request.lifecycle
+        if (lifecycle.isNullOrBlank()) {
+            logger.warn("Missing or empty lifecycle in request")
+            return@withContext SmartAppResponse()
+        }
+        
+        logger.info("Processing lifecycle: {}", lifecycle)
+        when (lifecycle) {
             "CONFIRMATION" -> handleConfirmation(request)
             "CONFIGURATION" -> handleConfiguration(request)
             "INSTALL" -> handleInstall(request)
             else -> {
-                logger.warn("Unhandled lifecycle: {}", request.lifecycle)
+                logger.warn("Unhandled lifecycle: {}", lifecycle)
                 SmartAppResponse()
             }
         }
     }
 
     private suspend fun handleConfirmation(request: SmartAppRequest): SmartAppResponse {
+        logger.info("Handling CONFIRMATION lifecycle")
         val confirmationUrl = request.confirmationData?.confirmationUrl
+        logger.info("Confirmation URL: {}", confirmationUrl)
+        logger.info("Target URL to respond: {}", targetUrl)
+        
         if (!confirmationUrl.isNullOrBlank()) {
             try {
+                logger.info("Calling confirmation URL: {}", confirmationUrl)
                 webClient.build()
                     .get()
                     .uri(confirmationUrl)
@@ -57,13 +75,19 @@ class SmartAppController(
                     .awaitSingle()
                 logger.info("Confirmation URL called successfully")
             } catch (e: Exception) {
-                logger.warn("Failed to call confirmation URL: {}", e.message)
+                logger.error("Failed to call confirmation URL", e)
             }
+        } else {
+            logger.warn("Confirmation URL is null or blank")
         }
         return SmartAppResponse(targetUrl = targetUrl)
     }
 
     private fun handleConfiguration(request: SmartAppRequest): SmartAppResponse {
+        logger.info("Handling CONFIGURATION lifecycle")
+        logger.info("Configuration phase: {}", request.configurationData?.phase)
+        logger.info("Page ID: {}", request.configurationData?.pageId)
+        
         val configurationData = ConfigurationResponseData(
             initialize = InitializeData(
                 name = "SmartThings Kotlin App",
@@ -82,7 +106,11 @@ class SmartAppController(
     }
 
     private fun handleInstall(request: SmartAppRequest): SmartAppResponse {
-        val installData = request.installData ?: return SmartAppResponse(installData = emptyMap())
+        logger.info("Handling INSTALL lifecycle")
+        val installData = request.installData ?: run {
+            logger.warn("Install data is null")
+            return SmartAppResponse(installData = emptyMap())
+        }
         val installedAppData = installData.installedApp ?: return SmartAppResponse(installData = emptyMap())
         val installedAppId = installedAppData.installedAppId
         val authToken = installData.authToken

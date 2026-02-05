@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SmartAppRequest(
-    val lifecycle: String,
+    val lifecycle: String? = null,
     val confirmationData: ConfirmationData? = null,
     val configurationData: ConfigurationRequestData? = null,
     val installData: InstallData? = null,
