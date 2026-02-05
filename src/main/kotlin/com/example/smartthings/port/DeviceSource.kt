@@ -7,5 +7,5 @@ import com.example.smartthings.web.dto.DevicesResponse
  * Implementations are adapters (e.g. SmartThingsClient).
  */
 interface DeviceSource {
-    suspend fun getDevices(): DevicesResponse
+    suspend fun getDevices(accessToken: String): DevicesResponse
 }
