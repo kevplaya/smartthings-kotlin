@@ -11,6 +11,9 @@ import org.springframework.web.reactive.function.client.WebClient
 class SmartThingsConfig {
 
     @Bean
+    fun webClientBuilder(): WebClient.Builder = WebClient.builder()
+
+    @Bean
     fun smartThingsWebClient(
         @Value("\${smartthings.api.base-url}") baseUrl: String
     ): WebClient {
