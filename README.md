@@ -8,11 +8,35 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 - **Spring Boot**: 4.0.2
 - **Java**: 25
 - **Gradle**: Kotlin DSL
-- **Spring WebFlux**: WebClient를 통한 HTTP 통신
+- **Spring WebFlux**: 비동기 HTTP 서버 및 WebClient
+- **Kotlin Coroutines**: `kotlinx-coroutines-reactor`로 WebClient와 연동
+- **Spring Data JPA**: 기기 별명 등 사용자 데이터 저장 (H2)
+- **Resilience4j**: Circuit Breaker로 외부 API 장애 격리
+
+## 기술 스택 선택 이유
+
+- **Kotlin**: null 안전성, 데이터 클래스·코루틴 등으로 생산성과 유지보수성 확보.
+- **Spring WebFlux + Coroutines**: 논블로킹 스택으로 스레드 효율을 높이고, suspend 함수로 가독성 있는 비동기 흐름 유지.
+- **JPA + H2**: 기기 별명 같은 단순 도메인은 JPA로 빠르게 모델링·구현. 테스트·로컬은 H2 인메모리/파일 사용.
+- **Resilience4j**: SmartThings API 장애 시 Circuit Breaker로 실패를 격리하고, 503 등 일관된 에러 응답 제공.
+
+## 아키텍처
+
+- **레이어드 + 헥사고날(포트/어댑터)**: 도메인·애플리케이션 로직과 외부 API·DB를 명확히 분리.
+  - **포트**: `DeviceSource`(기기 목록 조회) 등 인터페이스로 “필요한 능력”만 정의.
+  - **어댑터**: `SmartThingsClient`가 `DeviceSource` 구현체로, 외부 SmartThings API 호출을 담당.
+  - **의존성 방향**: Controller → Service → Port(인터페이스), Adapter → Port 구현.
+- **도메인**: `UserDeviceAlias` 등 엔티티는 `domain/`에 두고, 외부 DTO와 구분.
+
+## 안정성
+
+- **글로벌 예외 처리**: `@RestControllerAdvice`로 `WebClientResponseException`(4xx/5xx), 타임아웃, 기타 예외를 표준화된 `ErrorResponse`(code, message, path, timestamp)로 매핑해 클라이언트에 일관된 에러 응답 제공.
+- **Resilience4j**: SmartThings 호출에 Circuit Breaker 적용. 장애 시 “SmartThings API temporarily unavailable” 등 503 응답으로 외부 장애 전파 완화.
 
 ## 주요 기능
 
 - SmartThings 기기 목록 조회
+- 사용자별 기기 별명 저장·조회 (DB)
 
 ## 프로젝트 구조
 
@@ -20,19 +44,27 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 src/
 ├── main/
 │   ├── kotlin/com/example/smartthings/
-│   │   ├── SmartThingsApplication.kt        # 메인 애플리케이션
+│   │   ├── SmartThingsApplication.kt
 │   │   ├── config/
-│   │   │   └── SmartThingsConfig.kt         # WebClient 설정
+│   │   │   └── SmartThingsConfig.kt
+│   │   ├── port/
+│   │   │   └── DeviceSource.kt              # 기기 목록 조회 포트
 │   │   ├── client/
-│   │   │   └── SmartThingsClient.kt         # SmartThings API 클라이언트
+│   │   │   └── SmartThingsClient.kt         # DeviceSource 어댑터 (SmartThings API)
+│   │   ├── domain/
+│   │   │   └── UserDeviceAlias.kt
+│   │   ├── repository/
+│   │   │   └── UserDeviceAliasRepository.kt
 │   │   ├── service/
-│   │   │   └── DeviceService.kt             # 비즈니스 로직
+│   │   │   ├── DeviceService.kt
+│   │   │   └── DeviceAliasService.kt
 │   │   └── web/
-│   │       ├── dto/DeviceDto.kt             # API 응답 DTO
-│   │       └── DeviceController.kt          # REST API 컨트롤러
+│   │       ├── dto/
+│   │       ├── GlobalExceptionHandler.kt
+│   │       ├── DeviceController.kt
+│   │       └── DeviceAliasController.kt
 │   └── resources/
-│       ├── application.yml                   # 기본 설정
-│       └── application-local.yml             # 로컬 개발 설정 (Git 제외)
+│       └── application.yml
 └── test/
     └── kotlin/com/example/smartthings/
         ├── client/SmartThingsClientTest.kt
@@ -50,7 +82,7 @@ src/
 
 ### 2. 로컬 설정 파일 생성
 
-`src/main/resources/application-local.yml` 파일에 토큰 설정:
+`src/main/resources/application-local.yml` 파일에 토큰 설정 (Git 제외):
 
 ```yaml
 smartthings:
@@ -61,10 +93,7 @@ smartthings:
 ### 3. 애플리케이션 실행
 
 ```bash
-# Gradle wrapper 실행 권한 부여
 chmod +x gradlew
-
-# 로컬 프로파일로 실행
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
@@ -75,14 +104,20 @@ export SMARTTHINGS_TOKEN=YOUR_TOKEN_HERE
 ./gradlew bootRun
 ```
 
-### 4. 테스트
+### 4. Docker로 실행
 
 ```bash
-# 전체 테스트 실행
-./gradlew test
+export SMARTTHINGS_TOKEN=YOUR_TOKEN_HERE
+docker compose up --build
+```
 
-# 애플리케이션이 실행 중일 때 API 호출
-curl http://localhost:8080/api/devices
+- H2 DB 데이터는 `app-data` 볼륨에 저장됩니다.
+- 앱만 빌드: `docker build -t smartthings-kotlin .`
+
+### 5. 테스트
+
+```bash
+./gradlew test
 ```
 
 ## API 문서
@@ -91,7 +126,7 @@ curl http://localhost:8080/api/devices
 
 SmartThings에 등록된 모든 기기 목록을 조회합니다.
 
-**Response:**
+**Response:** `200 OK`
 
 ```json
 [
@@ -107,6 +142,41 @@ SmartThings에 등록된 모든 기기 목록을 조회합니다.
   }
 ]
 ```
+
+### GET /api/users/{userId}/devices/{deviceId}/alias
+
+사용자·기기별로 저장한 별명을 조회합니다. 없으면 `404`.
+
+**Response:** `200 OK`
+
+```json
+{ "alias": "거실 조명" }
+```
+
+### PUT /api/users/{userId}/devices/{deviceId}/alias
+
+사용자·기기별 별명을 저장하거나 수정합니다.
+
+**Request body:**
+
+```json
+{ "alias": "거실 조명" }
+```
+
+**Response:** `200 OK`
+
+```json
+{ "alias": "거실 조명" }
+```
+
+### 에러 응답 (공통)
+
+`ErrorResponse`: `code`, `message`, `path`, `timestamp` (필요 시 `errors`).
+
+- 업스트림 API 오류: `502 Bad Gateway` / `503 Service Unavailable`
+- 타임아웃: `504 Gateway Timeout`
+- Circuit Breaker 열림: `503` (SmartThings API temporarily unavailable)
+- 기타: `500 Internal Server Error`
 
 ## 개발 가이드
 

@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SMARTTHINGS_TOKEN=${SMARTTHINGS_TOKEN}
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/smartthings;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    volumes:
+      - app-data:/app/data
+
+volumes:
+  app-data:

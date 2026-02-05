@@ -2,9 +2,10 @@ package com.example.smartthings.web
 
 import com.example.smartthings.service.DeviceService
 import com.example.smartthings.web.dto.DeviceDto
-import io.mockk.every
+import io.mockk.coEvery
 import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.coVerify
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,7 +22,7 @@ class DeviceControllerTest {
     }
 
     @Test
-    fun `getDevices should return device list from service`() {
+    fun `getDevices should return device list from service`() = runBlocking {
         // given
         val mockDevices = listOf(
             DeviceDto(
@@ -35,7 +36,7 @@ class DeviceControllerTest {
                 locationId = "location-1"
             )
         )
-        every { deviceService.getDevices() } returns mockDevices
+        coEvery { deviceService.getDevices() } returns mockDevices
 
         // when
         val result = controller.getDevices()
@@ -43,19 +44,19 @@ class DeviceControllerTest {
         // then
         assertThat(result).hasSize(1)
         assertThat(result[0].deviceId).isEqualTo("device-1")
-        verify(exactly = 1) { deviceService.getDevices() }
+        coVerify(exactly = 1) { deviceService.getDevices() }
     }
 
     @Test
-    fun `getDevices should return empty list when service returns empty`() {
+    fun `getDevices should return empty list when service returns empty`() = runBlocking {
         // given
-        every { deviceService.getDevices() } returns emptyList()
+        coEvery { deviceService.getDevices() } returns emptyList()
 
         // when
         val result = controller.getDevices()
 
         // then
         assertThat(result).isEmpty()
-        verify(exactly = 1) { deviceService.getDevices() }
+        coVerify(exactly = 1) { deviceService.getDevices() }
     }
 }

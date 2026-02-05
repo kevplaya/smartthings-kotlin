@@ -17,3 +17,4 @@ Thumbs.db
 # Application
 application-local.yml
 *.log
+data/
