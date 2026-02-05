@@ -16,14 +16,13 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.client.WebClient
 
 @RestController
-@RequestMapping("/smartapp")
 class SmartAppController(
     private val webClient: WebClient.Builder,
     @Value("\${smartthings.webhook.target-url}") private val targetUrl: String,
 ) {
     private val logger = LoggerFactory.getLogger(SmartAppController::class.java)
 
-    @PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/", consumes = [MediaType.APPLICATION_JSON_VALUE])
     suspend fun handleLifecycle(@RequestBody request: SmartAppRequest): SmartAppResponse = withContext(Dispatchers.IO) {
         val lifecycle = request.lifecycle ?: when {
             request.confirmationData != null -> "CONFIRMATION"

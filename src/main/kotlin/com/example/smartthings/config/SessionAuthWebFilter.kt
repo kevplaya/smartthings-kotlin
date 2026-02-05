@@ -27,7 +27,15 @@ class SessionAuthWebFilter(
     }
 
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-        if (PUBLIC_PATHS.any { exchange.request.path.value().startsWith(it) }) {
+        val path = exchange.request.path.value()
+        val method = exchange.request.method.name()
+        
+        // SmartThings webhook POST 요청은 인증 제외
+        if (method == "POST" && path == "/") {
+            return chain.filter(exchange)
+        }
+        
+        if (PUBLIC_PATHS.any { path.startsWith(it) }) {
             return chain.filter(exchange)
         }
         val sessionId = exchange.request.cookies.getFirst("SESSION_ID")?.value
