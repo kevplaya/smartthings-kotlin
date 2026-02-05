@@ -21,7 +21,8 @@ class SessionAuthWebFilter(
         private val PUBLIC_PATHS = setOf(
             "/api/oauth/authorize",
             "/api/oauth/callback",
-            "/api/user/me"
+            "/api/user/me",
+            "/smartapp"
         )
     }
 
