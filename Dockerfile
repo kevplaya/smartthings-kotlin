@@ -12,7 +12,10 @@ RUN ./gradlew bootJar --no-daemon -x test
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
-RUN adduser -D -u 1000 appuser
+RUN adduser -D -u 1000 appuser && \
+    mkdir -p /app/data && \
+    chown -R appuser:appuser /app
+
 USER appuser
 
 COPY --from=build /app/build/libs/*.jar app.jar
