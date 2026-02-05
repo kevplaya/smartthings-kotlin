@@ -41,35 +41,65 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 ## 프로젝트 구조
 
 ```
-src/
-├── main/
-│   ├── kotlin/com/example/smartthings/
-│   │   ├── SmartThingsApplication.kt
-│   │   ├── config/
-│   │   │   └── SmartThingsConfig.kt
-│   │   ├── port/
-│   │   │   └── DeviceSource.kt              # 기기 목록 조회 포트
-│   │   ├── client/
-│   │   │   └── SmartThingsClient.kt         # DeviceSource 어댑터 (SmartThings API)
-│   │   ├── domain/
-│   │   │   └── UserDeviceAlias.kt
-│   │   ├── repository/
-│   │   │   └── UserDeviceAliasRepository.kt
-│   │   ├── service/
-│   │   │   ├── DeviceService.kt
-│   │   │   └── DeviceAliasService.kt
-│   │   └── web/
-│   │       ├── dto/
-│   │       ├── GlobalExceptionHandler.kt
-│   │       ├── DeviceController.kt
-│   │       └── DeviceAliasController.kt
-│   └── resources/
-│       └── application.yml
-└── test/
-    └── kotlin/com/example/smartthings/
-        ├── client/SmartThingsClientTest.kt
-        ├── service/DeviceServiceTest.kt
-        └── web/DeviceControllerTest.kt
+프로젝트 루트/
+├── src/                              # 백엔드 (Kotlin/Spring Boot)
+│   ├── main/
+│   │   ├── kotlin/com/example/smartthings/
+│   │   │   ├── SmartThingsApplication.kt
+│   │   │   ├── config/               # 설정 (CORS, OAuth, SmartThings)
+│   │   │   │   ├── CorsConfig.kt
+│   │   │   │   ├── SessionAuthWebFilter.kt
+│   │   │   │   └── SmartThingsConfig.kt
+│   │   │   ├── port/
+│   │   │   │   └── DeviceSource.kt   # 포트 인터페이스
+│   │   │   ├── client/
+│   │   │   │   └── SmartThingsClient.kt  # DeviceSource 구현
+│   │   │   ├── domain/
+│   │   │   │   ├── UserDeviceAlias.kt
+│   │   │   │   └── UserSession.kt    # OAuth 세션
+│   │   │   ├── repository/
+│   │   │   │   ├── UserDeviceAliasRepository.kt
+│   │   │   │   └── UserSessionRepository.kt
+│   │   │   ├── service/
+│   │   │   │   ├── DeviceService.kt
+│   │   │   │   ├── DeviceAliasService.kt
+│   │   │   │   └── OAuthService.kt   # OAuth 인증
+│   │   │   └── web/
+│   │   │       ├── dto/
+│   │   │       │   ├── DeviceDto.kt
+│   │   │       │   ├── DeviceAliasDto.kt
+│   │   │       │   ├── ErrorResponse.kt
+│   │   │       │   └── OAuthTokenResponse.kt
+│   │   │       ├── GlobalExceptionHandler.kt
+│   │   │       ├── DeviceController.kt
+│   │   │       ├── DeviceAliasController.kt
+│   │   │       ├── OAuthController.kt
+│   │   │       └── UserController.kt
+│   │   └── resources/
+│   │       └── application.yml
+│   └── test/
+│       └── kotlin/com/example/smartthings/
+│           ├── client/SmartThingsClientTest.kt
+│           ├── service/DeviceServiceTest.kt
+│           └── web/DeviceControllerTest.kt
+└── frontend/                         # 프론트엔드 (React/Vite)
+    ├── src/
+    │   ├── api/                      # API 클라이언트
+    │   │   ├── auth.ts               # OAuth 로그인/로그아웃
+    │   │   ├── devices.ts            # 기기 목록 조회
+    │   │   └── user.ts               # 사용자 정보
+    │   ├── pages/                    # 페이지 컴포넌트
+    │   │   ├── DevicesPage.tsx       # 기기 목록 페이지
+    │   │   ├── LoginPage.tsx         # 로그인 페이지
+    │   │   └── OAuthCallbackPage.tsx # OAuth 콜백
+    │   ├── types/
+    │   │   └── device.ts             # TypeScript 타입 정의
+    │   ├── App.tsx                   # 루트 컴포넌트, 라우팅
+    │   └── main.tsx                  # 진입점
+    ├── .env.development              # 로컬 환경 변수
+    ├── .env.production               # 프로덕션 환경 변수
+    ├── vercel.json                   # Vercel 배포 설정
+    └── vite.config.ts                # Vite 빌드 설정
 ```
 
 ## 설치 및 실행
