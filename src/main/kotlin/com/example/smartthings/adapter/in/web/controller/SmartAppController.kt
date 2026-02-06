@@ -1,7 +1,7 @@
-package com.example.smartthings.web
+package com.example.smartthings.adapter.`in`.web.controller
 
-import com.example.smartthings.web.dto.SmartAppRequest
-import com.example.smartthings.web.dto.SmartAppResponse
+import com.example.smartthings.adapter.`in`.web.dto.SmartAppRequest
+import com.example.smartthings.adapter.`in`.web.dto.SmartAppResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.withContext

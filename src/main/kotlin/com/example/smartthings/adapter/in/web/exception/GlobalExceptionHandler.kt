@@ -1,6 +1,7 @@
-package com.example.smartthings.web
+package com.example.smartthings.adapter.`in`.web.exception
 
-import com.example.smartthings.web.dto.ErrorResponse
+import com.example.smartthings.adapter.`in`.web.dto.ErrorResponse
+import com.example.smartthings.domain.exception.DeviceAliasNotFoundException
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -15,6 +16,20 @@ import java.util.concurrent.TimeoutException
 class GlobalExceptionHandler {
 
     private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
+
+    @ExceptionHandler(DeviceAliasNotFoundException::class)
+    fun handleDeviceAliasNotFoundException(
+        ex: DeviceAliasNotFoundException,
+        exchange: ServerWebExchange
+    ): ResponseEntity<ErrorResponse> {
+        logger.debug("Device alias not found: {}", ex.message)
+        val body = ErrorResponse(
+            code = HttpStatus.NOT_FOUND.value(),
+            message = ex.message ?: "No alias found for device",
+            path = exchange.request.path.value()
+        )
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body)
+    }
 
     @ExceptionHandler(org.springframework.web.reactive.function.client.WebClientResponseException::class)
     fun handleWebClientResponseException(

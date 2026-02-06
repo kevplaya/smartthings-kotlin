@@ -1,29 +1,30 @@
-package com.example.smartthings.web
+package com.example.smartthings.adapter.`in`.web.controller
 
-import com.example.smartthings.service.DeviceAliasService
-import com.example.smartthings.web.dto.DeviceAliasRequest
-import com.example.smartthings.web.dto.DeviceAliasResponse
-import org.springframework.http.HttpStatus
+import com.example.smartthings.adapter.`in`.web.dto.DeviceAliasRequest
+import com.example.smartthings.adapter.`in`.web.dto.DeviceAliasResponse
+import com.example.smartthings.domain.exception.DeviceAliasNotFoundException
+import com.example.smartthings.domain.port.`in`.GetDeviceAliasQuery
+import com.example.smartthings.domain.port.`in`.SetDeviceAliasCommand
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.server.ResponseStatusException
 
 @RestController
 @RequestMapping("/api/users/{userId}/devices/{deviceId}")
 class DeviceAliasController(
-    private val deviceAliasService: DeviceAliasService
+    private val getDeviceAliasQuery: GetDeviceAliasQuery,
+    private val setDeviceAliasCommand: SetDeviceAliasCommand
 ) {
     @GetMapping("/alias")
     suspend fun getAlias(
         @PathVariable userId: String,
         @PathVariable deviceId: String
     ): DeviceAliasResponse {
-        val alias = deviceAliasService.getAlias(userId, deviceId)
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No alias found for device")
+        val alias = getDeviceAliasQuery.getAlias(userId, deviceId)
+            ?: throw DeviceAliasNotFoundException(userId, deviceId)
         return DeviceAliasResponse(alias = alias)
     }
 
@@ -33,7 +34,7 @@ class DeviceAliasController(
         @PathVariable deviceId: String,
         @RequestBody request: DeviceAliasRequest
     ): DeviceAliasResponse {
-        val alias = deviceAliasService.setAlias(userId, deviceId, request.alias)
+        val alias = setDeviceAliasCommand.setAlias(userId, deviceId, request.alias)
         return DeviceAliasResponse(alias = alias)
     }
 }

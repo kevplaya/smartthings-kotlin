@@ -1,4 +1,4 @@
-package com.example.smartthings.web.dto
+package com.example.smartthings.adapter.`in`.web.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 
