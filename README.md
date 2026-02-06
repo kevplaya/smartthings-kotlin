@@ -22,11 +22,13 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 
 ## 아키텍처
 
-- **레이어드 + 헥사고날(포트/어댑터)**: 도메인·애플리케이션 로직과 외부 API·DB를 명확히 분리.
-  - **포트**: `DeviceSource`(기기 목록 조회) 등 인터페이스로 “필요한 능력”만 정의.
-  - **어댑터**: `SmartThingsClient`가 `DeviceSource` 구현체로, 외부 SmartThings API 호출을 담당.
-  - **의존성 방향**: Controller → Service → Port(인터페이스), Adapter → Port 구현.
-- **도메인**: `UserDeviceAlias` 등 엔티티는 `domain/`에 두고, 외부 DTO와 구분.
+- **헥사고날(포트-어댑터)**: 도메인 중심 설계로 비즈니스 로직과 외부 API·DB를 명확히 분리합니다.
+  - **도메인**: 순수 도메인 모델(`Device`, `DeviceAlias`)과 포트 인터페이스만 두어 외부 의존성이 없습니다.
+  - **인바운드 포트**: `GetDevicesUseCase`, `GetDeviceAliasQuery`, `SetDeviceAliasCommand` 등 유스케이스 인터페이스로 “애플리케이션이 제공하는 능력”을 정의합니다.
+  - **아웃바운드 포트**: `LoadDevicesPort`, `LoadDeviceAliasPort`, `SaveDeviceAliasPort` 등으로 “외부에 요청하는 능력”을 정의합니다.
+  - **어댑터**: 인바운드(Web Controllers)는 유스케이스를 호출하고, 아웃바운드(SmartThings API, JPA)는 포트를 구현합니다.
+  - **의존성 방향**: 모든 의존성이 도메인을 향합니다. Controller → UseCase(인터페이스), Application Service → Port(인터페이스), Adapter → Port 구현.
+- **효과**: 도메인·애플리케이션 레이어는 프레임워크·DB·외부 API에 의존하지 않아 단위 테스트 시 포트 모킹이 용이하고, 외부 장애 격리가 명확합니다.
 
 ## 안정성
 
@@ -50,34 +52,28 @@ Samsung SmartThings 기기를 제어하는 Kotlin + Spring Boot 백엔드 서비
 │   │   │   │   ├── BasicAuthWebFilter.kt
 │   │   │   │   ├── CorsConfig.kt
 │   │   │   │   └── SmartThingsConfig.kt
-│   │   │   ├── port/
-│   │   │   │   └── DeviceSource.kt   # 포트 인터페이스
-│   │   │   ├── client/
-│   │   │   │   └── SmartThingsClient.kt  # DeviceSource 구현 (PAT 사용)
-│   │   │   ├── domain/
-│   │   │   │   └── UserDeviceAlias.kt
-│   │   │   ├── repository/
-│   │   │   │   └── UserDeviceAliasRepository.kt
-│   │   │   ├── service/
-│   │   │   │   ├── DeviceService.kt
-│   │   │   │   └── DeviceAliasService.kt
-│   │   │   └── web/
-│   │   │       ├── dto/
-│   │   │       │   ├── DeviceDto.kt
-│   │   │       │   ├── DeviceAliasDto.kt
-│   │   │       │   ├── ErrorResponse.kt
-│   │   │       │   ├── SmartAppRequest.kt
-│   │   │       │   └── SmartAppResponse.kt
-│   │   │       ├── GlobalExceptionHandler.kt
-│   │   │       ├── DeviceController.kt
-│   │   │       ├── DeviceAliasController.kt
-│   │   │       └── SmartAppController.kt   # POST / (webhook CONFIRMATION)
+│   │   │   ├── domain/               # 도메인 레이어
+│   │   │   │   ├── model/            # 도메인 모델 (Device, DeviceAlias)
+│   │   │   │   ├── port/
+│   │   │   │   │   ├── in/           # 인바운드 포트 (유스케이스)
+│   │   │   │   │   └── out/          # 아웃바운드 포트
+│   │   │   │   └── exception/        # 도메인 예외
+│   │   │   ├── application/          # 애플리케이션 레이어
+│   │   │   │   └── service/          # 유스케이스 구현 (DeviceService, DeviceAliasService)
+│   │   │   └── adapter/               # 어댑터 레이어
+│   │   │       ├── in/web/           # 인바운드 어댑터
+│   │   │       │   ├── controller/   # DeviceController, DeviceAliasController, SmartAppController
+│   │   │       │   ├── dto/
+│   │   │       │   └── exception/    # GlobalExceptionHandler
+│   │   │       └── out/              # 아웃바운드 어댑터
+│   │   │           ├── persistence/  # DB (JPA 엔티티, Repository, DeviceAliasPersistenceAdapter)
+│   │   │           └── smartthings/   # SmartThings API (SmartThingsClient, SmartThingsDeviceAdapter)
 │   │   └── resources/
 │   │       └── application.yml
 │   └── test/
 │       └── kotlin/com/example/smartthings/
-│           ├── client/SmartThingsClientTest.kt
-│           ├── service/DeviceServiceTest.kt
+│           ├── adapter/out/smartthings/SmartThingsClientTest.kt
+│           ├── application/service/DeviceServiceTest.kt
 │           └── web/DeviceControllerTest.kt
 └── frontend/                         # 프론트엔드 (React/Vite)
     ├── src/
