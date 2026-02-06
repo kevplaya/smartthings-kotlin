@@ -1,4 +1,4 @@
-package com.example.smartthings.domain
+package com.example.smartthings.adapter.out.persistence.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -9,8 +9,11 @@ import jakarta.persistence.Table
 import jakarta.persistence.Version
 
 @Entity
-@Table(name = "user_device_alias", uniqueConstraints = [jakarta.persistence.UniqueConstraint(columnNames = ["user_id", "device_id"])])
-data class UserDeviceAlias(
+@Table(
+    name = "user_device_alias",
+    uniqueConstraints = [jakarta.persistence.UniqueConstraint(columnNames = ["user_id", "device_id"])]
+)
+data class UserDeviceAliasEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
