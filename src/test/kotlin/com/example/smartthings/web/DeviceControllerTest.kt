@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test
 
 class DeviceControllerTest {
 
-    private lateinit var deviceService: DeviceService
+    private lateinit var getDevicesUseCase: DeviceService
     private lateinit var controller: DeviceController
 
     @BeforeEach
     fun setup() {
-        deviceService = mockk()
-        controller = DeviceController(deviceService)
+        getDevicesUseCase = mockk()
+        controller = DeviceController(getDevicesUseCase)
     }
 
     @Test
@@ -35,22 +35,22 @@ class DeviceControllerTest {
                 locationId = "location-1"
             )
         )
-        coEvery { deviceService.getDevices() } returns mockDevices
+        coEvery { getDevicesUseCase.getDevices() } returns mockDevices
 
         val result = controller.getDevices()
 
         assertThat(result).hasSize(1)
         assertThat(result[0].deviceId).isEqualTo("device-1")
-        coVerify(exactly = 1) { deviceService.getDevices() }
+        coVerify(exactly = 1) { getDevicesUseCase.getDevices() }
     }
 
     @Test
     fun `getDevices should return empty list when service returns empty`() = runBlocking {
-        coEvery { deviceService.getDevices() } returns emptyList()
+        coEvery { getDevicesUseCase.getDevices() } returns emptyList()
 
         val result = controller.getDevices()
 
         assertThat(result).isEmpty()
-        coVerify(exactly = 1) { deviceService.getDevices() }
+        coVerify(exactly = 1) { getDevicesUseCase.getDevices() }
     }
 }
