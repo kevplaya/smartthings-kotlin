@@ -20,6 +20,10 @@ class BasicAuthWebFilter(
         val path = exchange.request.path.value()
         val method = exchange.request.method.name()
 
+        if (method == "OPTIONS") {
+            return chain.filter(exchange)
+        }
+
         if (method == "POST" && path == "/") {
             return chain.filter(exchange)
         }
@@ -44,5 +48,5 @@ class BasicAuthWebFilter(
         return parts.size == 2 && parts[0] == username && parts[1] == password
     }
 
-    override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE + 10
+    override fun getOrder(): Int = Ordered.LOWEST_PRECEDENCE - 1
 }
